@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Holland Sentences TTS</title>
+<title>Zinnen</title>
 <style>
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f4f6f8; color: #333; }
 h2 { margin-bottom: 15px; font-weight: 600; }
@@ -11,7 +11,13 @@ h2 { margin-bottom: 15px; font-weight: 600; }
 button, input, select { padding: 8px 14px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; background: #fff; transition: 0.2s; }
 button:hover, input:hover, select:hover { border-color: #a7cbbc; }
 
-table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden; }
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-radius: 6px; }
 tbody tr td { padding: 12px 15px; border-bottom: 1px solid #eee; }
 thead th { background-color: #a7cbbc; color: #fff; padding: 12px 15px; text-align: left; position: sticky; top: 0; z-index: 10; }
 .play-icon { margin-right: 5px; cursor: pointer; }
@@ -24,7 +30,7 @@ thead th { background-color: #a7cbbc; color: #fff; padding: 12px 15px; text-alig
 </head>
 <body>
 
-<h2>Holland Sentences TTS</h2>
+<h2>Zinnen</h2>
 
 <div class="controls">
     <label>
@@ -44,9 +50,8 @@ thead th { background-color: #a7cbbc; color: #fff; padding: 12px 15px; text-alig
 <table id="sentenceTable">
     <thead>
         <tr>
-            <th></th>
-            <th>Holland</th>
-            <th>Translation</th>
+            <th>Hulp</th>
+            <th>Nederland</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -102,40 +107,40 @@ function displaySentences(sentences){
     sentences.forEach(s=>{
         const tr = document.createElement("tr");
 
-        // Play icon
-        const tdPlay = document.createElement("td");
-        const playBtn = document.createElement("span");
-        playBtn.textContent = "▶️";
-        playBtn.className = "play-icon";
-        let playing = false;
-        playBtn.addEventListener("click", e=>{
-            e.stopPropagation();
-            if(playing){
-                stopSpeaking();
-                playBtn.textContent = "▶️";
-                playing = false;
-            } else {
-                playBtn.textContent = "⏹";
-                playing = true;
-                speak(s.dutch, ()=>{
-                    playBtn.textContent = "▶️";
-                    playing=false;
-                });
-            }
-        });
-        tdPlay.appendChild(playBtn);
-        tr.appendChild(tdPlay);
+        // // Play icon
+        // const tdPlay = document.createElement("td");
+        // const playBtn = document.createElement("span");
+        // playBtn.textContent = "▶️";
+        // playBtn.className = "play-icon";
+        // let playing = false;
+        // playBtn.addEventListener("click", e=>{
+        //     e.stopPropagation();
+        //     if(playing){
+        //         stopSpeaking();
+        //         playBtn.textContent = "▶️";
+        //         playing = false;
+        //     } else {
+        //         playBtn.textContent = "⏹";
+        //         playing = true;
+        //         speak(s.dutch, ()=>{
+        //             playBtn.textContent = "▶️";
+        //             playing=false;
+        //         });
+        //     }
+        // });
+        // tdPlay.appendChild(playBtn);
+        // tr.appendChild(tdPlay);
+
+        // Translation
+        const tdTrans = document.createElement("td");
+        tdTrans.textContent = s.translation;
+        tr.appendChild(tdTrans);
 
         // Dutch
         const tdDutch = document.createElement("td");
         tdDutch.textContent = s.dutch;
         tdDutch.addEventListener("click", e=>speak(s.dutch));
         tr.appendChild(tdDutch);
-
-        // Translation
-        const tdTrans = document.createElement("td");
-        tdTrans.textContent = s.translation;
-        tr.appendChild(tdTrans);
 
         tbody.appendChild(tr);
     });
@@ -151,7 +156,7 @@ function handleFileInput(file){
         const sentences = lines.map(line=>{
             let parts = line.includes('\t') ? line.split('\t') : line.split(';');
             parts = parts.map(p=>p.trim());
-            return { dutch: parts[0] || '', translation: parts[1] || '' };
+            return { translation: parts[0] || '', dutch: parts[1] || '' };
         });
 
         const sortMode = document.getElementById("sortSelector").value;
@@ -194,7 +199,7 @@ fetch('zinnen.csv')
     const sentences = lines.map(line=>{
         let parts = line.includes('\t') ? line.split('\t') : line.split(';');
         parts = parts.map(p=>p.trim());
-        return { dutch: parts[0] || '', translation: parts[1] || '' };
+        return { translation: parts[0] || '', dutch: parts[1] || '' };
     });
     displaySentences(sentences);
 })
