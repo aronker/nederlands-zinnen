@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zinnen</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+<title>Vraag en antwoord</title>
 <style>
 body{
   font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
@@ -162,7 +159,6 @@ tbody td{
     display:none;
   }
 }
-
 tbody tr:nth-child(odd){
   background-color: #f0f0f0;
 }
@@ -171,25 +167,29 @@ tbody tr:nth-child(even){
   background-color: #ffffff;
 }
 
+/* Hover effekt a sorokra */
 tbody tr:hover{
   background-color: #e8f4fd;
   transition: background-color 0.2s;
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
-<h2>Zinnen</h2>
+<h2>Vraag en antwoord</h2>
 
 <div class="add-row">
-<input type="text" id="newTranslation" placeholder="Hulp">
-<input type="text" id="newDutch" placeholder="Nederland">
+<input type="text" id="newQuestion" placeholder="Vraag">
+<input type="text" id="newHulp" placeholder="Hulp">
+<input type="text" id="newAnswer" placeholder="Antwoord">
 <button id="addRowBtn">Voeg toe</button>
 <button id="clearStorageBtn">Alles wissen</button>
 <button id="downloadXLSXBtn">Download XLSX</button>
 <label>
 Sorteren:
 <select id="sortSelector">
+<option value="original">Origineel</option>
 <option value="abc">ABC</option>
 <option value="random">Willekeurig</option>
 </select>
@@ -203,8 +203,9 @@ Laad XLSX:
 <table id="sentenceTable">
 <thead>
 <tr>
+<th>Vraag</th>
 <th>Hulp</th>
-<th>Nederland</th>
+<th>Antwoord</th>
 <th>Acties</th>
 </tr>
 </thead>
@@ -224,93 +225,107 @@ if(voice) selectedVoice=voice;
 if(speechSynthesis.onvoiceschanged!==undefined){speechSynthesis.onvoiceschanged=detectDutchVoice;}
 detectDutchVoice();
 function speak(text){if(!text) return; const u=new SpeechSynthesisUtterance(text); u.lang=selectedVoice?.lang||"nl-NL"; if(selectedVoice) u.voice=selectedVoice; u.pitch=1; u.rate=0.8; synth.speak(u);}
-function stopSpeaking(){synth.cancel();}
 
 // DATA
-let sentenceList = JSON.parse(localStorage.getItem("zinnenData")||"[]");
+let sentenceList = JSON.parse(localStorage.getItem("qaData") || "[]");
 
 // SHUFFLE
 function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}}
 
-// DISPLAY
-function displaySentences(){
-const tbody=document.querySelector("#sentenceTable tbody");
-tbody.innerHTML="";
-applySort(sentenceList);
-sentenceList.forEach((s,index)=>{
-const tr=document.createElement("tr");
-// Translation
-const tdTrans=document.createElement("td"); tdTrans.textContent=s.translation; tr.appendChild(tdTrans);
-// Dutch
-const tdDutch=document.createElement("td"); tdDutch.textContent=s.dutch; tdDutch.addEventListener("click",()=>speak(s.dutch)); tr.appendChild(tdDutch);
-// Delete
-const tdDel=document.createElement("td");
-const delBtn=document.createElement("button"); delBtn.className="delete-btn"; delBtn.textContent="❌";
-delBtn.addEventListener("click",()=>{
-if(confirm("Weet je zeker dat je deze rij wilt verwijderen?")){sentenceList.splice(index,1); saveAndDisplay();}});
-tdDel.appendChild(delBtn); tr.appendChild(tdDel);
-tbody.appendChild(tr);
-});
-localStorage.setItem("zinnenData",JSON.stringify(sentenceList));
-}
-
-function saveAndDisplay(){displaySentences();}
-
 // SORT
 function applySort(arr){
 const mode=document.getElementById("sortSelector").value;
-if(mode==="abc") arr.sort((a,b)=>a.dutch.localeCompare(b.dutch,'nl'));
+if(mode==="original") arr.sort((a,b)=>a.originalIndex-b.originalIndex);
+else if(mode==="abc") arr.sort((a,b)=>a.question.localeCompare(b.question,'nl'));
 else if(mode==="random") shuffleArray(arr);
 }
 
-// ADD ROW
+// DISPLAY
+function displaySentences(sentences){
+applySort(sentences);
+const tbody=document.querySelector("#sentenceTable tbody");
+tbody.innerHTML="";
+sentenceList.forEach((s,index)=>{
+const tr=document.createElement("tr");
+// QUESTION
+const tdQ=document.createElement("td");
+const q=document.createElement("span"); q.className="question"; q.textContent=s.question;
+q.addEventListener("click",()=>speak(s.question)); tdQ.appendChild(q); tr.appendChild(tdQ);
+// HULP
+const tdH=document.createElement("td"); tdH.className="hulp"; tdH.textContent=s.hulp; tr.appendChild(tdH);
+// ANSWER
+const tdA=document.createElement("td");
+const wrapper=document.createElement("div"); wrapper.className="answer-wrapper";
+const toggle=document.createElement("button"); toggle.className="toggle-btn"; toggle.textContent="toon";
+const answer=document.createElement("span"); answer.className="answer"; answer.textContent=s.answer;
+answer.addEventListener("click",()=>speak(s.answer));
+toggle.addEventListener("click",()=>{if(answer.classList.contains("visible")){answer.classList.remove("visible"); toggle.textContent="toon";}else{answer.classList.add("visible"); toggle.textContent="verberg";}});
+wrapper.appendChild(toggle); wrapper.appendChild(answer); tdA.appendChild(wrapper); tr.appendChild(tdA);
+// DELETE
+const tdDel=document.createElement("td");
+const delBtn=document.createElement("button"); delBtn.className="delete-btn"; delBtn.textContent="❌";
+delBtn.addEventListener("click",()=>{
+if(confirm("Weet je zeker dat je deze rij wilt verwijderen?")){
+sentenceList.splice(index,1); saveAndDisplay();}});
+tdDel.appendChild(delBtn); tr.appendChild(tdDel);
+
+tbody.appendChild(tr);
+});
+localStorage.setItem("qaData", JSON.stringify(sentenceList));
+}
+
+function saveAndDisplay(){displaySentences(sentenceList);}
+
+// EVENTS
 document.getElementById("addRowBtn").addEventListener("click",()=>{
-const t=document.getElementById("newTranslation").value.trim();
-const d=document.getElementById("newDutch").value.trim();
-if(!t && !d) return;
-sentenceList.push({translation:t,dutch:d});
-document.getElementById("newTranslation").value="";
-document.getElementById("newDutch").value="";
+const q=document.getElementById("newQuestion").value.trim();
+const h=document.getElementById("newHulp").value.trim();
+const a=document.getElementById("newAnswer").value.trim();
+if(!q && !h && !a) return;
+sentenceList.push({question:q,hulp:h,answer:a,originalIndex:sentenceList.length});
+document.getElementById("newQuestion").value="";
+document.getElementById("newHulp").value="";
+document.getElementById("newAnswer").value="";
 saveAndDisplay();
 });
 
-// CLEAR
 document.getElementById("clearStorageBtn").addEventListener("click",()=>{
-if(confirm("Weet je zeker dat je alles wilt wissen?")){sentenceList=[]; localStorage.removeItem("zinnenData"); saveAndDisplay();}});
+if(confirm("Weet je zeker dat je alles wilt wissen?")){
+sentenceList=[]; localStorage.removeItem("qaData"); saveAndDisplay();
+}});
 
-// DOWNLOAD XLSX
 document.getElementById("downloadXLSXBtn").addEventListener("click",()=>{
 if(!sentenceList.length){alert("Geen data om te downloaden."); return;}
-const ws_data=[["Hulp","Nederland"], ...sentenceList.map(s=>[s.translation,s.dutch])];
+const ws_data=[["Vraag","Hulp","Antwoord"], ...sentenceList.map(s=>[s.question,s.hulp,s.answer])];
 const wb=XLSX.utils.book_new();
 const ws=XLSX.utils.aoa_to_sheet(ws_data);
-XLSX.utils.book_append_sheet(wb,ws,"Zinnen");
-XLSX.writeFile(wb,"zinnen.xlsx");
+XLSX.utils.book_append_sheet(wb,ws,"QA");
+XLSX.writeFile(wb,"qa.xlsx");
 });
 
-// SORT SELECTOR
 document.getElementById("sortSelector").addEventListener("change",()=>{saveAndDisplay();});
 
 // XLSX FILE INPUT
-document.getElementById("xlsxFile").addEventListener("change",e=>{
-const file=e.target.files[0];
+document.getElementById("xlsxFile").addEventListener("change", e=>{
+const file = e.target.files[0];
 if(!file) return;
-const reader=new FileReader();
-reader.onload=function(ev){
-const data=new Uint8Array(ev.target.result);
-const workbook=XLSX.read(data,{type:'array'});
-const firstSheetName=workbook.SheetNames[0];
-const worksheet=workbook.Sheets[firstSheetName];
-const json=XLSX.utils.sheet_to_json(worksheet,{header:1});
-json.slice(1).forEach(row=>{sentenceList.push({translation:row[0]||"",dutch:row[1]||""});});
+const reader = new FileReader();
+reader.onload = function(ev){
+const data = new Uint8Array(ev.target.result);
+const workbook = XLSX.read(data,{type:'array'});
+const firstSheetName = workbook.SheetNames[0];
+const worksheet = workbook.Sheets[firstSheetName];
+const json = XLSX.utils.sheet_to_json(worksheet,{header:1});
+json.slice(1).forEach(row=>{
+sentenceList.push({question:row[0]||"",hulp:row[1]||"",answer:row[2]||"",originalIndex:sentenceList.length});
+});
 saveAndDisplay();
 };
 reader.readAsArrayBuffer(file);
 });
 
 // INIT
-saveAndDisplay();
-
+displaySentences(sentenceList);
 </script>
 </body>
 </html>
